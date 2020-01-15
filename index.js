@@ -4,6 +4,9 @@ module.exports = class dynamicAuthzConfig
   {
     this.config=config.statics
     this.context=this.config.context 
+    this.bootstrap=require('./bootstrap.js')
+    this.enums=require('./struct.js') 
+    this.tempConfig=require('./config.js')
   }
   //private
   async reload(self)
@@ -18,6 +21,11 @@ module.exports = class dynamicAuthzConfig
   {
 	  var r={}
     let session=msg.session
+	if(session.isAdmin)
+	{
+		return func(null,{isAdmin:true})
+	}
+		
 	if(!self.roles)
 		await self.reload(self);
 		 console.log('-------------------------->',self.roles)
@@ -92,8 +100,8 @@ module.exports = class dynamicAuthzConfig
     let dt=msg.data
     let session=msg.session
 	
-		// console.log('-------------------------->',self.roles)
-		// console.log('-------------------------->',session)
+		 console.log('-------------------------->',self.roles)
+		 console.log('-------------------------->',session)
 		
     if(!session)session={}
     if( session.isAdmin)
@@ -103,6 +111,7 @@ module.exports = class dynamicAuthzConfig
 	if(!self.roles)
 		await self.reload(self);
     var acc=global.auth[dt.domain] 
+			console.log('-------------->>>>', acc)
     if(acc && acc[dt.service])
     {
 		if(acc[dt.service]=='public')
@@ -114,11 +123,15 @@ module.exports = class dynamicAuthzConfig
 			return func(null,true)
 		}
 	  
+    }    
 		if(!session.roles)
 			return func(null,false)
 		
 		for(var a of self.roles)
 		{
+			console.log('-------------->>>>', session.roles)
+			console.log('-------------->>>>', Math.pow(2,a.id))
+			console.log('-------------->>>>', a.data[dt.domain+"_"+dt.service])
 			if((session.roles & Math.pow(2,a.id)))
 				if(a.data[dt.domain+"_"+dt.service])
 					return func(null,true);
@@ -140,7 +153,6 @@ module.exports = class dynamicAuthzConfig
 			}				
 		}
         return func(null,false) 
-    }    
     return func(null,false)  
   }
 }
